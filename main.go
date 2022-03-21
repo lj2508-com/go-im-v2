@@ -2,14 +2,29 @@ package main
 
 import (
 	"encoding/json"
+	"html/template"
+	"log"
 	"net/http"
 )
 
 func main() {
 	http.HandleFunc("/user/login", userlogin)
+	http.Handle("/asset/", http.FileServer(http.Dir(".")))
+	registerView()
 	http.ListenAndServe(":8090", nil)
 }
-
+func registerView() {
+	glob, err := template.ParseGlob("view/**/*")
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	for _, v := range glob.Templates() {
+		name := v.Name()
+		http.HandleFunc(name, func(writer http.ResponseWriter, request *http.Request) {
+			glob.ExecuteTemplate(writer, name, nil)
+		})
+	}
+}
 func userlogin(writer http.ResponseWriter, request *http.Request) {
 	request.ParseForm()
 	mobile := request.PostForm.Get("mobile")
