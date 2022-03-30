@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"xorm.io/xorm"
 )
 
 func main() {
@@ -12,6 +13,15 @@ func main() {
 	http.Handle("/asset/", http.FileServer(http.Dir(".")))
 	registerView()
 	http.ListenAndServe(":8090", nil)
+}
+
+var DbEngine *xorm.Engine
+
+func init() {
+	drivename := "sqlite3"
+	dbPath := `/Users/lijiang/Documents/sqllite3.db`
+	xorm.NewEngine(drivename, dbPath)
+
 }
 func registerView() {
 	glob, err := template.ParseGlob("view/**/*")
