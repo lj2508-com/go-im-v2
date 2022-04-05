@@ -2,11 +2,15 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	_ "github.com/mattn/go-sqlite3"
 	"html/template"
 	"log"
 	"net/http"
 	"xorm.io/xorm"
 )
+
+var DbEngin *xorm.Engine
 
 func main() {
 	http.HandleFunc("/user/login", userlogin)
@@ -15,13 +19,20 @@ func main() {
 	http.ListenAndServe(":8090", nil)
 }
 
-var DbEngine *xorm.Engine
+func Ahuiafhia() {
+
+}
 
 func init() {
 	drivename := "sqlite3"
 	dbPath := `/Users/lijiang/Documents/sqllite3.db`
-	xorm.NewEngine(drivename, dbPath)
-
+	DbEngin, err := xorm.NewEngine(drivename, dbPath)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	DbEngin.ShowSQL(true)
+	DbEngin.SetMaxOpenConns(200)
+	fmt.Println("== 数据库初始化成功 ==")
 }
 func registerView() {
 	glob, err := template.ParseGlob("view/**/*")
