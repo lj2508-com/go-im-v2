@@ -2,38 +2,22 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	_ "github.com/mattn/go-sqlite3"
+	"go-im-v2/serivce"
 	"html/template"
 	"log"
 	"net/http"
-	"xorm.io/xorm"
 )
 
-var DbEngin *xorm.Engine
-
 func main() {
+
+	http.HandleFunc("/user/register", UserRegister)
 	http.HandleFunc("/user/login", userlogin)
 	http.Handle("/asset/", http.FileServer(http.Dir(".")))
 	registerView()
 	http.ListenAndServe(":8090", nil)
 }
 
-func Ahuiafhia() {
-
-}
-
-func init() {
-	drivename := "sqlite3"
-	dbPath := `/Users/lijiang/Documents/sqllite3.db`
-	DbEngin, err := xorm.NewEngine(drivename, dbPath)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	DbEngin.ShowSQL(true)
-	DbEngin.SetMaxOpenConns(200)
-	fmt.Println("== 数据库初始化成功 ==")
-}
 func registerView() {
 	glob, err := template.ParseGlob("view/**/*")
 	if err != nil {
@@ -46,6 +30,25 @@ func registerView() {
 		})
 	}
 }
+
+var userService serivce.UserService
+
+func UserRegister(writer http.ResponseWriter, request *http.Request) {
+	request.ParseForm()
+	mobile := request.PostForm.Get("mobile")
+	plainPass := request.PostForm.Get("passwd")
+	sex := request.PostForm.Get("sex")
+	nickName := request.PostForm.Get("nickName")
+	avatar := request.PostForm.Get("avatar")
+
+	user, err := userService.Register(mobile, plainPass, nickName, avatar, sex)
+	if err == nil {
+		resp(writer, 0, user, "")
+	} else {
+		resp(writer, -1, nil, err.Error())
+	}
+}
+
 func userlogin(writer http.ResponseWriter, request *http.Request) {
 	request.ParseForm()
 	mobile := request.PostForm.Get("mobile")
