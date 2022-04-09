@@ -16,7 +16,7 @@ type UserService struct {
 func (s *UserService) Register(mobile, plainPass, nickName, avatar, sex string) (user model.User, err error) {
 	//先判断用户是否注册过 手机号唯一
 	tmp := model.User{}
-	_, err = DbEngin.Where("mobile=", mobile).Get(&tmp)
+	_, err = DbEngin.Where("mobile=?", mobile).Get(&tmp)
 	if err != nil {
 		return tmp, err
 	}
@@ -32,9 +32,10 @@ func (s *UserService) Register(mobile, plainPass, nickName, avatar, sex string) 
 	tmp.Salt = fmt.Sprintf("%06d", rand.Int31())
 	tmp.Passwd = util.MakePasswd(tmp.Salt, plainPass)
 
+	fmt.Println(tmp)
 	DbEngin.InsertOne(tmp)
 	//保存成功，返回用户
-	return user, nil
+	return tmp, nil
 }
 
 //用户登陆

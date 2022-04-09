@@ -1,9 +1,8 @@
 package main
 
 import (
-	"encoding/json"
 	_ "github.com/mattn/go-sqlite3"
-	"go-im-v2/serivce"
+	"go-im-v2/ctrl"
 	"html/template"
 	"log"
 	"net/http"
@@ -11,8 +10,8 @@ import (
 
 func main() {
 
-	http.HandleFunc("/user/register", UserRegister)
-	http.HandleFunc("/user/login", userlogin)
+	http.HandleFunc("/user/register", ctrl.UserRegister)
+	http.HandleFunc("/user/login", ctrl.UserLogin)
 	http.Handle("/asset/", http.FileServer(http.Dir(".")))
 	registerView()
 	http.ListenAndServe(":8090", nil)
@@ -29,58 +28,4 @@ func registerView() {
 			glob.ExecuteTemplate(writer, name, nil)
 		})
 	}
-}
-
-var userService serivce.UserService
-
-func UserRegister(writer http.ResponseWriter, request *http.Request) {
-	request.ParseForm()
-	mobile := request.PostForm.Get("mobile")
-	plainPass := request.PostForm.Get("passwd")
-	sex := request.PostForm.Get("sex")
-	nickName := request.PostForm.Get("nickName")
-	avatar := request.PostForm.Get("avatar")
-
-	user, err := userService.Register(mobile, plainPass, nickName, avatar, sex)
-	if err == nil {
-		resp(writer, 0, user, "")
-	} else {
-		resp(writer, -1, nil, err.Error())
-	}
-}
-
-func userlogin(writer http.ResponseWriter, request *http.Request) {
-	request.ParseForm()
-	mobile := request.PostForm.Get("mobile")
-	passwd := request.PostForm.Get("passwd")
-	loginSu := false
-	if mobile == "18100000000" && passwd == "123456" {
-		loginSu = true
-	}
-	if loginSu {
-		data := make(map[string]interface{})
-		data["id"] = 1
-		data["token"] = "test"
-		resp(writer, 0, data, "")
-	} else {
-		resp(writer, -1, nil, "账号或密码错误！")
-	}
-}
-
-type respBady struct {
-	Code int
-	Data interface{}
-	Msg  string
-}
-
-func resp(writer http.ResponseWriter, code int, data interface{}, msg string) {
-	writer.Header().Set("Content-Type", "application/json")
-	writer.WriteHeader(http.StatusOK)
-	bady := respBady{
-		Code: code,
-		Data: data,
-		Msg:  msg,
-	}
-	json, _ := json.Marshal(bady)
-	writer.Write(json)
 }
