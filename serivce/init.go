@@ -19,7 +19,8 @@ func init() {
 		log.Fatal(err.Error())
 	}
 	DbEngin.ShowSQL(true)
-	DbEngin.Sync2(new(model.User))
+	//根据实体来建立表
+	DbEngin.Sync2(new(model.User), new(model.Contact), new(model.Community))
 	DbEngin.SetMaxOpenConns(200)
 	fmt.Println("== 数据库初始化成功 ==")
 }

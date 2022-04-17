@@ -28,16 +28,10 @@ func UserLogin(writer http.ResponseWriter, request *http.Request) {
 	request.ParseForm()
 	mobile := request.PostForm.Get("mobile")
 	passwd := request.PostForm.Get("passwd")
-	loginSu := false
-	if mobile == "18100000000" && passwd == "123456" {
-		loginSu = true
-	}
-	if loginSu {
-		data := make(map[string]interface{})
-		data["id"] = 1
-		data["token"] = "test"
-		util.RespOk(writer, data, "")
+	user, err := userService.Login(mobile, passwd)
+	if err != nil {
+		util.RespFail(writer, err.Error())
 	} else {
-		util.RespFail(writer, "账号或密码错误！")
+		util.RespOk(writer, user, "")
 	}
 }

@@ -44,7 +44,6 @@
         methods:{
             login:function(){
                 //检测手机号是否正确
-                console.log("login")
                 //检测密码是否为空
 
                 //网络请求
@@ -56,8 +55,8 @@
                     }else{
                         var url = "/chat/index.shtml?id="+res.data.id
                                 +"&token="+res.data.token
-                        userInfo(res.data)
-                        userId(res.data.id)
+                       /* userInfo(res.data)
+                        userId(res.data.id)*/
                         location.href= url
                         //mui.alert(url)
                     }
