@@ -16,7 +16,7 @@ func main() {
 	http.HandleFunc("/contact/loadfriend", ctrl.LoadFriend)
 	http.HandleFunc("/contact/loadcommunity", ctrl.LoadCommunity)
 	http.HandleFunc("/contact/joincommunity", ctrl.JoinCommunity)
-	http.HandleFunc("/char", ctrl.Chat)
+	http.HandleFunc("/chat", ctrl.Chat)
 	http.Handle("/asset/", http.FileServer(http.Dir(".")))
 	registerView()
 	http.ListenAndServe(":8090", nil)

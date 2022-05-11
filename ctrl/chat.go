@@ -1,6 +1,7 @@
 package ctrl
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"gopkg.in/fatih/set.v0"
@@ -9,6 +10,27 @@ import (
 	"strconv"
 	"sync"
 )
+
+//信息类型
+const (
+	CMD_SINGLE_MSG = 10
+	CMD_ROOM_MSG   = 11
+	CMD_HEART      = 0
+)
+
+//信息处理实体
+type Message struct {
+	Id      int64  `json:"id,omitempty" form:"id"`           //消息ID
+	Userid  int64  `json:"userid,omitempty" form:"userid"`   //谁发的
+	Cmd     int    `json:"cmd,omitempty" form:"cmd"`         //群聊还是私聊
+	Dstid   int64  `json:"dstid,omitempty" form:"dstid"`     //对端用户ID/群ID
+	Media   int    `json:"media,omitempty" form:"media"`     //消息按照什么样式展示
+	Content string `json:"content,omitempty" form:"content"` //消息的内容
+	Pic     string `json:"pic,omitempty" form:"pic"`         //预览图片
+	Url     string `json:"url,omitempty" form:"url"`         //服务的URL
+	Memo    string `json:"memo,omitempty" form:"memo"`       //简单描述
+	Amount  int    `json:"amount,omitempty" form:"amount"`   //其他和数字相关的
+}
 
 //本核心在于形成userid和Node的映射关系
 type Node struct {
@@ -56,11 +78,9 @@ func Chat(writer http.ResponseWriter,
 	clientMap[userId] = node
 	rwlocker.Unlock()
 	//todo 完成发送逻辑,con
-	sendproc(node)
+	go sendproc(node)
 	//todo 完成接收逻辑
-	recvproc(node)
-	//发送测试内容
-	sendMsg(7, []byte("hello world!"))
+	go recvproc(node)
 }
 
 //发送协程
@@ -87,7 +107,7 @@ func recvproc(node *Node) {
 			return
 		}
 		//todo 对data进一步处理
-		fmt.Printf("recv<=%s", data)
+		dispatch(data)
 	}
 }
 
@@ -98,6 +118,28 @@ func sendMsg(userId int64, msg []byte) {
 	rwlocker.RUnlock()
 	if ok {
 		node.DataQueue <- msg
+	}
+}
+
+//后端处理逻辑
+func dispatch(data []byte) {
+	//解析数据为message
+	msg := Message{}
+	err := json.Unmarshal(data, &msg)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	fmt.Println(msg.Dstid)
+	fmt.Println(msg.Content)
+	//对数据进行处理
+	switch msg.Cmd {
+	case CMD_SINGLE_MSG:
+		sendMsg(msg.Dstid, data)
+	case CMD_ROOM_MSG:
+		//转发群聊逻辑
+	case CMD_HEART:
+		//啥也不做
 	}
 }
 
