@@ -17,7 +17,9 @@ func main() {
 	http.HandleFunc("/contact/loadcommunity", ctrl.LoadCommunity)
 	http.HandleFunc("/contact/joincommunity", ctrl.JoinCommunity)
 	http.HandleFunc("/chat", ctrl.Chat)
+	http.HandleFunc("/attach/upload", ctrl.Upload)
 	http.Handle("/asset/", http.FileServer(http.Dir(".")))
+	http.Handle("/mnt/", http.FileServer(http.Dir(".")))
 	registerView()
 	http.ListenAndServe(":8090", nil)
 }
