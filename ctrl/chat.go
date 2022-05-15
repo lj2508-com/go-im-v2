@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/websocket"
 	"gopkg.in/fatih/set.v0"
 	"log"
+	"net"
 	"net/http"
 	"strconv"
 	"sync"
@@ -73,6 +74,12 @@ func Chat(writer http.ResponseWriter,
 		DataQueue: make(chan []byte, 50),
 		GroupSets: set.New(set.ThreadSafe),
 	}
+	//获取用户全部群id
+
+	comIds := contactService.SearchComunityIds(userId)
+	for _, v := range comIds {
+		node.GroupSets.Add(v)
+	}
 	//todo userid和node形成绑定关系
 	rwlocker.Lock()
 	clientMap[userId] = node
@@ -121,6 +128,73 @@ func sendMsg(userId int64, msg []byte) {
 	}
 }
 
+func init() {
+	go udpsendproc()
+	go udprecvproc()
+}
+
+//用来存放发送的要广播的数据
+var udpsendchan chan []byte = make(chan []byte, 1024)
+
+//todo 将消息广播到局域网
+func broadMsg(data []byte) {
+	udpsendchan <- data
+}
+
+//todo 完成udp数据的发送协程
+func udpsendproc() {
+	log.Println("start udpsendproc")
+	//todo 使用udp协议拨号
+	con, err := net.DialUDP("udp", nil,
+		&net.UDPAddr{
+			IP:   net.IPv4(192, 168, 0, 255),
+			Port: 3000,
+		})
+	defer con.Close()
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+	//todo 通过的到的con发送消息
+	//con.Write()
+	for {
+		select {
+		case data := <-udpsendchan:
+			_, err = con.Write(data)
+			if err != nil {
+				log.Println(err.Error())
+				return
+			}
+		}
+	}
+}
+
+//todo 完成upd接收并处理功能
+func udprecvproc() {
+	log.Println("start udprecvproc")
+	//todo 监听udp广播端口
+	con, err := net.ListenUDP("udp", &net.UDPAddr{
+		IP:   net.IPv4zero,
+		Port: 3000,
+	})
+	defer con.Close()
+	if err != nil {
+		log.Println(err.Error())
+	}
+	//TODO 处理端口发过来的数据
+	for {
+		var buf [512]byte
+		n, err := con.Read(buf[0:])
+		if err != nil {
+			log.Println(err.Error())
+			return
+		}
+		//直接数据处理
+		dispatch(buf[0:n])
+	}
+	log.Println("stop updrecvproc")
+}
+
 //后端处理逻辑
 func dispatch(data []byte) {
 	//解析数据为message
@@ -137,6 +211,11 @@ func dispatch(data []byte) {
 	case CMD_SINGLE_MSG:
 		sendMsg(msg.Dstid, data)
 	case CMD_ROOM_MSG:
+		for _, v := range clientMap {
+			if v.GroupSets.Has(msg.Dstid) {
+				v.DataQueue <- data
+			}
+		}
 		//转发群聊逻辑
 	case CMD_HEART:
 		//啥也不做
@@ -147,4 +226,17 @@ func dispatch(data []byte) {
 func checkToken(userId int64, token string) bool {
 	user := userService.Find(userId)
 	return user.Token == token
+}
+
+//添加新的群ID到用户的groupset中
+func AddGroupId(userId, gid int64) {
+	//取得node
+	rwlocker.Lock()
+	node, ok := clientMap[userId]
+	if ok {
+		node.GroupSets.Add(gid)
+	}
+	//clientMap[userId] = node
+	rwlocker.Unlock()
+	//添加gid到set
 }
